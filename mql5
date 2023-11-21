@@ -1,0 +1,192 @@
+mql5
+//+------------------------------------------------------------------+
+//|                                                          Scanner Trend Line PRO mt4                                                      |
+//|                                      Developed by Forex Robot Easy Team (forexroboteasy.com)                 |
+//+------------------------------------------------------------------+
+
+//--- Indicator handle
+int indicator_handle;
+
+//--- Global variables
+bool use_set_files = true;
+string set_file_directory = 'C:\\set_files\\';
+
+//--- Symbol and timeframe settings
+string symbol = '';
+ENUM_TIMEFRAMES timeframe = PERIOD_M5;
+
+//--- Trading functions
+bool open_position(double lot_size, ENUM_ORDER_TYPE order_type, double stop_loss, double take_profit);
+void close_position();
+void modify_position(double stop_loss, double take_profit);
+
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+void OnStart()
+{
+   //--- Initialize the Trend Line PRO indicator
+   if (!IndicatorInitialize())
+   {
+      Print('Failed to initialize the Trend Line PRO indicator!');
+      return;
+   }
+   
+   //--- Main loop
+   while (!IsStopped())
+   {
+      //--- Check for new signals from the indicator
+      if (IndicatorSignalReceived())
+      {
+         //--- Get the signal details
+         double lot_size = IndicatorGetLotSize();
+         ENUM_ORDER_TYPE order_type = IndicatorGetOrderType();
+         double stop_loss = IndicatorGetStopLoss();
+         double take_profit = IndicatorGetTakeProfit();
+         
+         //--- Open a new position
+         if (!open_position(lot_size, order_type, stop_loss, take_profit))
+         {
+            Print('Failed to open position!');
+         }
+      }
+      
+      //--- Sleep for 1 second before checking for new signals
+      Sleep(1000);
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Initialize the Trend Line PRO indicator                          |
+//+------------------------------------------------------------------+
+bool IndicatorInitialize()
+{
+   //--- Check if the indicator is installed
+   if (!IndicatorIsInstalled())
+   {
+      Print('Trend Line PRO indicator is not installed!');
+      return false;
+   }
+   
+   //--- Get the indicator handle
+   indicator_handle = iCustom(symbol, timeframe, 'Trend Line PRO');
+   
+   //--- Check if the indicator handle is valid
+   if (indicator_handle == INVALID_HANDLE)
+   {
+      Print('Failed to get the indicator handle!');
+      return false;
+   }
+   
+   return true;
+}
+
+//+------------------------------------------------------------------+
+//| Check if the Trend Line PRO indicator is installed               |
+//+------------------------------------------------------------------+
+bool IndicatorIsInstalled()
+{
+   string indicator_name = 'Trend Line PRO';
+   
+   //--- Check if the indicator is available in the Market
+   if (!MarketIsPresent(indicator_name))
+   {
+      Print(indicator_name + ' is not available in the Market!');
+      return false;
+   }
+   
+   return true;
+}
+
+//+------------------------------------------------------------------+
+//| Check if a new signal is received from the indicator             |
+//+------------------------------------------------------------------+
+bool IndicatorSignalReceived()
+{
+   //--- Check if the indicator signal buffer has been updated
+   return IndicatorCounted(indicator_handle) < Bars;
+}
+
+//+------------------------------------------------------------------+
+//| Get the lot size from the indicator                              |
+//+------------------------------------------------------------------+
+double IndicatorGetLotSize()
+{
+   //--- Get the lot size from the indicator
+   return iCustom(symbol, timeframe, 'Trend Line PRO', 1, 0);
+}
+
+//+------------------------------------------------------------------+
+//| Get the order type from the indicator                            |
+//+------------------------------------------------------------------+
+ENUM_ORDER_TYPE IndicatorGetOrderType()
+{
+   //--- Get the order type from the indicator
+   return (ENUM_ORDER_TYPE)iCustom(symbol, timeframe, 'Trend Line PRO', 2, 0);
+}
+
+//+------------------------------------------------------------------+
+//| Get the stop loss from the indicator                             |
+//+------------------------------------------------------------------+
+double IndicatorGetStopLoss()
+{
+   //--- Get the stop loss from the indicator
+   return iCustom(symbol, timeframe, 'Trend Line PRO', 3, 0);
+}
+
+//+------------------------------------------------------------------+
+//| Get the take profit from the indicator                           |
+//+------------------------------------------------------------------+
+double IndicatorGetTakeProfit()
+{
+   //--- Get the take profit from the indicator
+   return iCustom(symbol, timeframe, 'Trend Line PRO', 4, 0);
+}
+
+//+------------------------------------------------------------------+
+//| Open a new position                                               |
+//+------------------------------------------------------------------+
+bool open_position(double lot_size, ENUM_ORDER_TYPE order_type, double stop_loss, double take_profit)
+{
+   //--- Place the order
+   bool order_placed = OrderSend(symbol, order_type, lot_size, 0, 0, stop_loss, take_profit);
+   
+   //--- Check if the order was placed successfully
+   if (!order_placed)
+   {
+      Print('Failed to place the order!');
+      return false;
+   }
+   
+   return true;
+}
+
+//+------------------------------------------------------------------+
+//| Close the current position                                        |
+//+------------------------------------------------------------------+
+void close_position()
+{
+   //--- Close the position
+   bool position_closed = PositionClose(PositionGetTicket());
+   
+   //--- Check if the position was closed successfully
+   if (!position_closed)
+   {
+      Print('Failed to close the position!');
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Modify the current position                                       |
+//+------------------------------------------------------------------+
+void modify_position(double stop_loss, double take_profit)
+{
+   //--- Modify the position
+   bool position_modified = OrderModify(PositionGetTicket(), PositionGetOpenPrice(), stop_loss, take_profit, 0);
+   
+   //--- Check if the position was modified successfully
+   if (!position_modified)
+   {
+      Print('Failed to modify the position!');
+   }
+}
